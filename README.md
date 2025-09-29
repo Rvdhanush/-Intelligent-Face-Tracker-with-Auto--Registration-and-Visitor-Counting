@@ -19,49 +19,41 @@ A comprehensive real-time face tracking system with entry/exit detection, built 
 ## 🏗️ System Architecture
 
 ```mermaid
-graph TD
-    %% Input Sources
-    A[Video Files<br/>(.mp4, .avi)] --> D[YOLOv8 Detector<br/>detector.py]
-    B[RTSP Streams<br/>(IP Cameras)] --> D
-    C[config.json<br/>Configuration] --> D
+flowchart TD
+    A["📹 Video Files<br/>(.mp4, .avi)"] --> D["🔍 YOLOv8 Detector<br/>detector.py"]
+    B["📡 RTSP Streams<br/>(IP Cameras)"] --> D
+    C["⚙️ config.json<br/>Configuration"] --> D
     
-    %% Detection & Processing
-    D --> E[Face Quality<br/>Validation]
-    E --> F[Face Cropping &<br/>Preprocessing]
+    D --> E["✅ Face Quality<br/>Validation"]
+    E --> F["✂️ Face Cropping &<br/>Preprocessing"]
     
-    %% Recognition
-    F --> G[InsightFace<br/>Recognition<br/>recognizer.py]
-    F --> H[ONNX/ArcFace<br/>Recognition<br/>onnx_recognizer.py]
+    F --> G["🧠 InsightFace<br/>Recognition<br/>recognizer.py"]
+    F --> H["🔧 ONNX/ArcFace<br/>Recognition<br/>onnx_recognizer.py"]
     
-    %% Tracking
-    G --> I[ByteTracker<br/>bytetrack.py]
+    G --> I["🎯 ByteTracker<br/>bytetrack.py"]
     H --> I
-    I --> J[Custom Tracker<br/>tracker.py]
-    J --> K[Entry/Exit<br/>Detection]
+    I --> J["📍 Custom Tracker<br/>tracker.py"]
+    J --> K["🚪 Entry/Exit<br/>Detection"]
     
-    %% Storage & Logging
-    K --> L[SQLite Database<br/>db.py]
-    K --> M[Image Storage<br/>logs/images/]
-    K --> N[Log Files<br/>logger.py]
+    K --> L["💾 SQLite Database<br/>db.py"]
+    K --> M["📸 Image Storage<br/>logs/images/"]
+    K --> N["📝 Log Files<br/>logger.py"]
     
-    %% Output
-    L --> O[Web Dashboard<br/>app.py]
+    L --> O["🌐 Web Dashboard<br/>app.py"]
     M --> O
     N --> O
     
-    %% Deployment Options
-    P[main.py<br/>Full InsightFace] --> D
-    Q[simple_main.py<br/>Web Backend] --> D
-    R[production_main.py<br/>Full Compliance] --> D
+    P["🚀 main.py<br/>Full InsightFace"] --> D
+    Q["⚡ simple_main.py<br/>Web Backend"] --> D
+    R["🏆 production_main.py<br/>Full Compliance"] --> D
     
-    %% Styling
-    classDef input fill:#e1f5fe
-    classDef detection fill:#f3e5f5
-    classDef recognition fill:#e8f5e8
-    classDef tracking fill:#fff3e0
-    classDef storage fill:#fce4ec
-    classDef output fill:#e0f2f1
-    classDef deployment fill:#f1f8e9
+    classDef input fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef detection fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef recognition fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef tracking fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef storage fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef output fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    classDef deployment fill:#f1f8e9,stroke:#689f38,stroke-width:2px
     
     class A,B,C input
     class D,E,F detection
