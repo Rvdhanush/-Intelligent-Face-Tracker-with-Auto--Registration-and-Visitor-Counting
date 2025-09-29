@@ -11,107 +11,84 @@ A comprehensive real-time face tracking system with entry/exit detection, built 
 - **JSON Configuration**: Complete system configuration via config.json
 - **Comprehensive Logging**: Log files + Image storage + Database logging
 - **Video & RTSP Support**: Both file and stream input supported
-- **Web Dashboard**: Real-time monitoring with Flask interface
 - **Event Detection**: Entry and exit event logging
 - **Quality Filtering**: Face quality assessment and filtering
 - **Modular Architecture**: Easy to extend and customize
 - **Live Video Feed**: Real-time video streaming in web interface
 
-## 🏗️ Complete System Architecture
+## 🏗️ System Architecture
 
-                           FACE TRACKING SYSTEM PIPELINE
-                          ═══════════════════════════════════
-
-INPUT SOURCES                    DETECTION STAGE                    PROCESSING STAGE
-┌─────────────────┐             ┌─────────────────┐               ┌─────────────────┐
-│   Video Files   │────┐        │   YOLOv8 Model  │               │  Face Quality   │
-│   (.mp4, .avi)  │    │        │   (yolov8n.pt)  │               │   Validation    │
-└─────────────────┘    │        │                 │               │                 │
-                       ├───────▶│  Person Detection│──────────────▶│ Size/Brightness │
-┌─────────────────┐    │        │  Face Estimation │               │ Aspect Ratio    │
-│   RTSP Streams  │────┘        │  (detector.py)   │               │ (detector.py)   │
-│  (IP Cameras)   │             └─────────────────┘               └─────────────────┘
-└─────────────────┘                       │                                │
-                                         │                                │
-                              ┌─────────────────┐                         │
-                              │ Frame Processing│                         │
-                              │ Skip Frames: 2  │                         │
-                              │ (config.json)   │                         │
-                              └─────────────────┘                         │
-                                                                         │
-RECOGNITION STAGE                        TRACKING STAGE                   │
-┌─────────────────┐                    ┌─────────────────┐               │
-│ InsightFace     │◀───────────────────│   ByteTracker   │◀──────────────┘
-│ Recognition     │                    │  Multi-Object   │
-│ (recognizer.py) │                    │   Tracking      │
-│                 │                    │ (bytetrack.py)  │
-│ • Buffalo Model │                    │ • Kalman Filter │
-│ • Embeddings    │                    │ • Association   │
-│ • Similarity    │                    │ • State Machine │
-└─────────────────┘                    │                 │
-         │                             └─────────────────┘
-         │                                       │
-         │              ┌─────────────────┐     │
-         │              │ Custom Tracker  │     │
-         │              │ Entry/Exit Det. │     │
-         │              │  (tracker.py)   │     │
-         │              └─────────────────┘     │
-         │                       │              │
-         └───────────────────────┼──────────────┘
-                                │
-                    ┌─────────────────┐
-                    │  Track Events   │
-                    │ • Entry Events  │
-                    │ • Exit Events   │
-                    │ • Recognition   │
-                    └─────────────────┘
-                                │
-                                ▼
-STORAGE & LOGGING STAGE                           OUTPUT STAGE
-┌─────────────────┐    ┌─────────────────┐     ┌─────────────────┐
-│  Image Storage  │    │ SQLite Database │     │  Web Dashboard  │
-│                 │    │    (db.py)      │     │    (app.py)     │
-│ logs/images/    │    │                 │     │                 │
-│ ├─ entries/     │    │ Tables:         │     │ • Live Video    │
-│ ├─ exits/       │    │ • faces         │     │ • Statistics    │
-│ └─ faces/       │    │ • events        │     │ • Controls      │
-│                 │    │ • visitor_stats │     │ • Event Monitor │
-│ (logger.py)     │    │ • system_logs   │     │ • Face Gallery  │
-└─────────────────┘    └─────────────────┘     └─────────────────┘
-         │                       │                       │
-         │              ┌─────────────────┐              │
-         │              │   Log Files     │              │
-         │              │                 │              │
-         │              │ face_tracking_  │              │
-         │              │ YYYYMMDD.log    │              │
-         │              │                 │              │
-         │              │ JSON Events +   │              │
-         │              │ System Metrics  │              │
-         │              └─────────────────┘              │
-         │                                               │
-         └───────────────────────┬───────────────────────┘
-                                │
-                    ┌─────────────────┐
-                    │ CONFIGURATION   │
-                    │  (config.json)  │
-                    │                 │
-                    │ • Detection     │
-                    │ • Recognition   │
-                    │ • Tracking      │
-                    │ • Logging       │
-                    │ • Database      │
-                    └─────────────────┘
-
-DEPLOYMENT OPTIONS:
-┌─────────────────┬─────────────────┬─────────────────┬─────────────────┐
-│   main.py       │ simple_main.py  │production_main.py│ Web Dashboard   │
-│                 │                 │                 │                 │
-│ YOLOv8 +        │ YOLOv8 +        │ YOLOv8 +        │ Flask +         │
-│ InsightFace +   │ Simple Recog +  │ ONNX/ArcFace +  │ Real-time UI +  │
-│ Custom Track +  │ Custom Track +  │ ByteTrack +     │ Live Streaming  │
-│ Full Logging    │ Basic Logging   │ Full Compliance │                 │
-└─────────────────┴─────────────────┴─────────────────┴─────────────────┘
+```mermaid
+graph TD
+    %% Input Sources
+    A[Video Files<br/>(.mp4, .avi)] --> D[YOLOv8 Detector<br/>detector.py]
+    B[RTSP Streams<br/>(IP Cameras)] --> D
+    C[config.json<br/>Configuration] --> D
+    
+    %% Detection & Processing
+    D --> E[Face Quality<br/>Validation]
+    E --> F[Face Cropping &<br/>Preprocessing]
+    
+    %% Recognition
+    F --> G[InsightFace<br/>Recognition<br/>recognizer.py]
+    F --> H[ONNX/ArcFace<br/>Recognition<br/>onnx_recognizer.py]
+    
+    %% Tracking
+    G --> I[ByteTracker<br/>bytetrack.py]
+    H --> I
+    I --> J[Custom Tracker<br/>tracker.py]
+    J --> K[Entry/Exit<br/>Detection]
+    
+    %% Storage & Logging
+    K --> L[SQLite Database<br/>db.py]
+    K --> M[Image Storage<br/>logs/images/]
+    K --> N[Log Files<br/>logger.py]
+    
+    %% Output
+    L --> O[Web Dashboard<br/>app.py]
+    M --> O
+    N --> O
+    
+    %% Deployment Options
+    P[main.py<br/>Full InsightFace] --> D
+    Q[simple_main.py<br/>Web Backend] --> D
+    R[production_main.py<br/>Full Compliance] --> D
+    
+    %% Styling
+    classDef input fill:#e1f5fe
+    classDef detection fill:#f3e5f5
+    classDef recognition fill:#e8f5e8
+    classDef tracking fill:#fff3e0
+    classDef storage fill:#fce4ec
+    classDef output fill:#e0f2f1
+    classDef deployment fill:#f1f8e9
+    
+    class A,B,C input
+    class D,E,F detection
+    class G,H recognition
+    class I,J,K tracking
+    class L,M,N storage
+    class O output
+    class P,Q,R deployment
 ```
+
+### 📊 **Pipeline Flow**
+
+1. **Input** → Video files or RTSP streams + Configuration
+2. **Detection** → YOLOv8 face detection + Quality validation  
+3. **Recognition** → InsightFace or ONNX/ArcFace embeddings
+4. **Tracking** → ByteTrack + Custom entry/exit detection
+5. **Storage** → SQLite database + Image storage + Log files
+6. **Output** → Real-time web dashboard
+
+### 🚀 **Deployment Options**
+
+| File | Tech Stack | Purpose |
+|------|------------|---------|
+| `main.py` | YOLOv8 + InsightFace + Custom Tracker | Full implementation |
+| `simple_main.py` | YOLOv8 + Simple Recognition | Web dashboard backend |
+| `production_main.py` | YOLOv8 + ONNX/ArcFace + ByteTrack | **Hackathon compliance** |
+| Web Dashboard | Flask + Real-time UI | Live monitoring interface |
 
 ## ⚙️ Configuration
 
