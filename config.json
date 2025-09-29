@@ -1,0 +1,76 @@
+{
+  "video_source": "Video Datasets/video_sample1.mp4",
+  "rtsp_url": "rtsp://192.168.1.100:554/stream",
+  "use_rtsp": false,
+  "skip_frames": 2,
+  
+  "detection": {
+    "model_path": null,
+    "confidence_threshold": 0.5,
+    "min_face_size": 50,
+    "padding_ratio": 0.2
+  },
+  
+  "recognition": {
+    "model_name": "buffalo_l",
+    "similarity_threshold": 0.6,
+    "min_quality": 0.3,
+    "embedding_size": 512
+  },
+  
+  "tracking": {
+    "max_disappeared": 30,
+    "max_distance": 100.0,
+    "entry_exit_buffer": 5,
+    "iou_threshold": 0.3,
+    "frame_rate": 30,
+    "track_thresh": 0.5,
+    "track_buffer": 30,
+    "match_thresh": 0.8
+  },
+  
+  "logging": {
+    "base_log_dir": "logs",
+    "log_level": "INFO",
+    "save_images": true,
+    "cleanup_days": 30,
+    "max_log_size_mb": 100
+  },
+  
+  "database": {
+    "db_path": "face_tracking.db",
+    "backup_enabled": true,
+    "backup_interval_hours": 24
+  },
+  
+  "display": {
+    "show_video": true,
+    "show_fps": true,
+    "show_stats": true,
+    "window_width": 1280,
+    "window_height": 720,
+    "fullscreen": false
+  },
+  
+  "performance": {
+    "max_faces_per_frame": 10,
+    "processing_threads": 2,
+    "gpu_acceleration": true,
+    "memory_limit_mb": 2048
+  },
+  
+  "alerts": {
+    "enabled": false,
+    "max_faces_threshold": 20,
+    "unknown_face_alert": false,
+    "webhook_url": null
+  },
+  
+  "advanced": {
+    "face_quality_check": true,
+    "anti_spoofing": false,
+    "age_gender_detection": false,
+    "emotion_detection": false,
+    "mask_detection": false
+  }
+}

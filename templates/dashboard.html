@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Tracking System - Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #3498db;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .video-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .video-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .video-frame {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .video-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .video-select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-active {
+            background: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+
+        .status-inactive {
+            background: #95a5a6;
+        }
+
+        .events-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .events-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .event-entry {
+            border-left-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .event-exit {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .event-time {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-left: auto;
+        }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+        }
+
+        .image-item {
+            text-align: center;
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .image-item .image-label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-top: 0.5rem;
+        }
+
+        .tech-stack {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .tech-stack h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .tech-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+        }
+
+        .tech-check {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .video-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .events-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Intelligent Face Tracking System</h1>
+        <p>Real-time Face Detection, Recognition & Tracking Dashboard</p>
+    </div>
+
+    <div class="container">
+        <!-- Statistics Dashboard -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>📊 Processing Stats</h3>
+                <div class="stat-value" id="totalFrames">0</div>
+                <div class="stat-label">Total Frames Processed</div>
+            </div>
+            <div class="card">
+                <h3>👥 Active Faces</h3>
+                <div class="stat-value" id="activeFaces">0</div>
+                <div class="stat-label">Currently Tracking</div>
+            </div>
+            <div class="card">
+                <h3>🔍 Detections</h3>
+                <div class="stat-value" id="totalDetections">0</div>
+                <div class="stat-label">Faces Detected</div>
+            </div>
+            <div class="card">
+                <h3>🧠 Recognitions</h3>
+                <div class="stat-value" id="totalRecognitions">0</div>
+                <div class="stat-label">Face Recognitions</div>
+            </div>
+            <div class="card">
+                <h3>📈 Performance</h3>
+                <div class="stat-value" id="fps">0</div>
+                <div class="stat-label">FPS</div>
+            </div>
+            <div class="card">
+                <h3>🗄️ Database</h3>
+                <div class="stat-value" id="knownFaces">0</div>
+                <div class="stat-label">Known Faces</div>
+            </div>
+        </div>
+
+        <!-- Video Processing Section -->
+        <div class="video-section">
+            <div class="video-container">
+                <h3>📹 Live Video Feed</h3>
+                <div class="video-frame" id="videoFrame">
+                    <div>No video feed - Start processing to see live feed</div>
+                </div>
+                <div class="controls">
+                    <select class="video-select" id="videoSelect">
+                        <option value="">Select video file...</option>
+                    </select>
+                    <button class="btn btn-primary" id="startBtn" onclick="startProcessing()">
+                        ▶️ Start Processing
+                    </button>
+                    <button class="btn btn-danger" id="stopBtn" onclick="stopProcessing()" disabled>
+                        ⏹️ Stop Processing
+                    </button>
+                </div>
+                <div>
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    <span id="statusText">System Ready</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 System Information</h3>
+                <div style="margin-bottom: 1rem;">
+                    <strong>Daily Statistics:</strong>
+                    <div>Unique Visitors: <span id="uniqueVisitors">0</span></div>
+                    <div>Total Entries: <span id="totalEntries">0</span></div>
+                    <div>Total Exits: <span id="totalExits">0</span></div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <strong>Storage:</strong>
+                    <div>Entry Images: <span id="entryImages">0</span></div>
+                    <div>Exit Images: <span id="exitImages">0</span></div>
+                    <div>Log Files: <span id="logFiles">0</span></div>
+                </div>
+                <div>
+                    <strong>Video Files:</strong>
+                    <div id="videoCount">0 files available</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events and Images Section -->
+        <div class="events-section">
+            <div class="card">
+                <h3>📝 Recent Events</h3>
+                <div class="events-list" id="eventsList">
+                    <div style="text-align: center; color: #7f8c8d; padding: 2rem;">
+                        No recent events
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🖼️ Recent Face Images</h3>
+                <div class="images-grid" id="imagesGrid">
+                    <div style="text-align: center; color: #7f8c8d; padding: 2rem; grid-column: 1/-1;">
+                        No images captured yet
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tech Stack Information -->
+        <div class="tech-stack">
+            <h3>🛠️ Technology Stack Compliance</h3>
+            <div class="tech-items">
+                <div class="tech-item">
+                    <span class="tech-check">✅</span>
+                    <span>YOLOv8 Face Detection</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-check">✅</span>
+                    <span>ONNX/ArcFace Recognition</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-check">✅</span>
+                    <span>ByteTrack Tracking</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-check">✅</span>
+                    <span>SQLite Database</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-check">✅</span>
+                    <span>Python Backend</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-check">✅</span>
+                    <span>JSON Configuration</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-check">✅</span>
+                    <span>Comprehensive Logging</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-check">✅</span>
+                    <span>Web Dashboard (Bonus)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        let isProcessing = false;
+
+        // Socket event handlers
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            updateStatus('Connected to Face Tracking System', true);
+        });
+
+        socket.on('frame_update', function(data) {
+            // Update video frame
+            const videoFrame = document.getElementById('videoFrame');
+            videoFrame.innerHTML = `<img src="data:image/jpeg;base64,${data.frame}" alt="Live Feed">`;
+            
+            // Update real-time stats
+            updateRealtimeStats(data.stats);
+        });
+
+        socket.on('status', function(data) {
+            console.log('Status:', data.message);
+        });
+
+        // Load initial data
+        async function loadInitialData() {
+            try {
+                // Load video files
+                const videoResponse = await fetch('/api/video_files');
+                const videoData = await videoResponse.json();
+                
+                const videoSelect = document.getElementById('videoSelect');
+                videoSelect.innerHTML = '<option value="">Select video file...</option>';
+                
+                videoData.video_files.forEach(video => {
+                    const option = document.createElement('option');
+                    option.value = video.path;
+                    option.textContent = `${video.name} (${video.size_mb} MB)`;
+                    videoSelect.appendChild(option);
+                });
+
+                // Load initial stats
+                updateStats();
+                
+                // Load recent images
+                updateRecentImages();
+                
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+            }
+        }
+
+        // Update statistics
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                // Update system stats
+                const stats = data.system_stats || {};
+                document.getElementById('totalFrames').textContent = stats.total_frames || 0;
+                document.getElementById('activeFaces').textContent = stats.active_faces || 0;
+                document.getElementById('totalDetections').textContent = stats.total_detections || 0;
+                document.getElementById('totalRecognitions').textContent = stats.total_recognitions || 0;
+                document.getElementById('fps').textContent = (stats.fps || 0).toFixed(1);
+                document.getElementById('knownFaces').textContent = stats.known_faces || 0;
+                
+                // Update daily stats
+                const dailyStats = data.daily_stats || {};
+                document.getElementById('uniqueVisitors').textContent = dailyStats.unique_visitors || 0;
+                document.getElementById('totalEntries').textContent = dailyStats.total_entries || 0;
+                document.getElementById('totalExits').textContent = dailyStats.total_exits || 0;
+                
+                // Update log info
+                const logInfo = data.log_info || {};
+                document.getElementById('entryImages').textContent = logInfo.entry_images || 0;
+                document.getElementById('exitImages').textContent = logInfo.exit_images || 0;
+                document.getElementById('logFiles').textContent = logInfo.log_files || 0;
+                
+                // Update video count
+                const videoFiles = data.video_files || [];
+                document.getElementById('videoCount').textContent = `${videoFiles.length} files available`;
+                
+                // Update recent events
+                updateRecentEvents(data.recent_events || []);
+                
+                // Update processing status
+                isProcessing = data.is_processing || false;
+                updateProcessingButtons();
+                
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+
+        // Update real-time stats from socket
+        function updateRealtimeStats(stats) {
+            document.getElementById('totalFrames').textContent = stats.total_frames || 0;
+            document.getElementById('activeFaces').textContent = stats.active_faces || 0;
+            document.getElementById('totalDetections').textContent = stats.total_detections || 0;
+            document.getElementById('totalRecognitions').textContent = stats.total_recognitions || 0;
+            document.getElementById('knownFaces').textContent = stats.known_faces || 0;
+            
+            // Calculate and display FPS
+            const fps = stats.fps || (1 / (stats.processing_time || 1));
+            document.getElementById('fps').textContent = fps.toFixed(1);
+        }
+
+        // Update recent events
+        function updateRecentEvents(events) {
+            const eventsList = document.getElementById('eventsList');
+            
+            if (events.length === 0) {
+                eventsList.innerHTML = '<div style="text-align: center; color: #7f8c8d; padding: 2rem;">No recent events</div>';
+                return;
+            }
+            
+            eventsList.innerHTML = events.map(event => {
+                const eventClass = event.event_type === 'entry' ? 'event-entry' : 
+                                 event.event_type === 'exit' ? 'event-exit' : '';
+                const eventIcon = event.event_type === 'entry' ? '📥' : 
+                                event.event_type === 'exit' ? '📤' : '🔍';
+                
+                const timestamp = new Date(event.timestamp).toLocaleTimeString();
+                
+                return `
+                    <div class="event-item ${eventClass}">
+                        <span>${eventIcon}</span>
+                        <span>${event.event_type.toUpperCase()}: ${event.face_id}</span>
+                        <span class="event-time">${timestamp}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update recent images
+        async function updateRecentImages() {
+            try {
+                const response = await fetch('/api/recent_images');
+                const data = await response.json();
+                
+                const imagesGrid = document.getElementById('imagesGrid');
+                
+                if (data.images.length === 0) {
+                    imagesGrid.innerHTML = '<div style="text-align: center; color: #7f8c8d; padding: 2rem; grid-column: 1/-1;">No images captured yet</div>';
+                    return;
+                }
+                
+                imagesGrid.innerHTML = data.images.map(image => {
+                    const typeIcon = image.type === 'entry' ? '📥' : '📤';
+                    const timestamp = new Date(image.timestamp).toLocaleTimeString();
+                    
+                    return `
+                        <div class="image-item">
+                            <img src="data:image/jpeg;base64,${image.image}" alt="${image.type}">
+                            <div class="image-label">${typeIcon} ${timestamp}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error updating recent images:', error);
+            }
+        }
+
+        // Start processing
+        async function startProcessing() {
+            const videoSelect = document.getElementById('videoSelect');
+            const selectedVideo = videoSelect.value;
+            
+            if (!selectedVideo) {
+                alert('Please select a video file first');
+                return;
+            }
+            
+            try {
+                updateStatus('Starting processing...', true);
+                document.getElementById('startBtn').innerHTML = '<div class="loading"></div> Starting...';
+                document.getElementById('startBtn').disabled = true;
+                
+                const response = await fetch('/api/start_processing', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        video_file: selectedVideo
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    isProcessing = true;
+                    updateStatus('Processing video...', true);
+                    updateProcessingButtons();
+                } else {
+                    updateStatus(`Error: ${data.message}`, false);
+                    document.getElementById('startBtn').innerHTML = '▶️ Start Processing';
+                    document.getElementById('startBtn').disabled = false;
+                }
+                
+            } catch (error) {
+                console.error('Error starting processing:', error);
+                updateStatus('Error starting processing', false);
+                document.getElementById('startBtn').innerHTML = '▶️ Start Processing';
+                document.getElementById('startBtn').disabled = false;
+            }
+        }
+
+        // Stop processing
+        async function stopProcessing() {
+            try {
+                const response = await fetch('/api/stop_processing', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    isProcessing = false;
+                    updateStatus('Processing stopped', false);
+                    updateProcessingButtons();
+                    
+                    // Clear video frame
+                    document.getElementById('videoFrame').innerHTML = '<div>Processing stopped</div>';
+                }
+                
+            } catch (error) {
+                console.error('Error stopping processing:', error);
+            }
+        }
+
+        // Update processing buttons
+        function updateProcessingButtons() {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            if (isProcessing) {
+                startBtn.innerHTML = '▶️ Start Processing';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                startBtn.innerHTML = '▶️ Start Processing';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
+
+        // Update status
+        function updateStatus(message, isActive) {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            statusIndicator.className = `status-indicator ${isActive ? 'status-active' : 'status-inactive'}`;
+            statusText.textContent = message;
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInitialData();
+            
+            // Update stats every 5 seconds
+            setInterval(updateStats, 5000);
+            
+            // Update images every 10 seconds
+            setInterval(updateRecentImages, 10000);
+        });
+    </script>
+</body>
+</html>
