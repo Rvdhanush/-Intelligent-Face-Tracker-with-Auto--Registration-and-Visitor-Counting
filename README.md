@@ -1,6 +1,7 @@
 # Face Tracking System - Hackathon Submission
 
-A comprehensive real-time face tracking system with entry/exit detection, built using **YOLOv8**, **InsightFace**, and **ByteTrack** algorithms. This project meets all mandatory hackathon requirements with clean, modular Python code.
+A comprehensive real-time face tracking system with entry/exit detection, built using **YOLOv8**, **InsightFace**, and **ByteTrack** algorithms. This project meets all mandatory hackathon requirements with clean, modular Python code.  (Demo Video: https://www.loom.com/share/80ef3ef66b1046828eab7e60c14093b7)
+
 
 ## Key Features
 
